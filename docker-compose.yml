@@ -1,0 +1,6 @@
+services:
+  currency-exchanger:
+    build: .
+    volumes:
+      - ./data:/app/data
+    command: ["./app", "-config=configs/config.docker.yml"]

@@ -1,0 +1,10 @@
+app:
+  name: currency-exchanger
+  port: 8080
+  debug: false
+
+sqlite:
+  path: /app/data/app.db
+
+log:
+  level: info
