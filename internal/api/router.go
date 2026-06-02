@@ -1,51 +1,15 @@
-package handler
+package api
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"currency-exchange-converter/internal/api/health"
 )
 
-func NewRouter(
-// exchangeRate *ExchangeRateHandler,
-) *http.ServeMux {
-
+func NewRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	registerHealthRoutes(mux)
-
-	// exchangeRate.RegisterRoutes(
-	// 	mux,
-	// 	"/api/v1/exchange-rates",
-	// )
+	health.RegisterHealthRoutes(mux)
 
 	return mux
-}
-
-func registerHealthRoutes(
-	mux *http.ServeMux,
-) {
-
-	mux.HandleFunc(
-		"GET /health",
-		healthHandler,
-	)
-}
-
-func healthHandler(
-	w http.ResponseWriter,
-	r *http.Request,
-) {
-
-	w.Header().Set(
-		"Content-Type",
-		"application/json",
-	)
-
-	w.WriteHeader(http.StatusOK)
-
-	_ = json.NewEncoder(w).Encode(
-		map[string]string{
-			"status": "ok",
-		},
-	)
 }

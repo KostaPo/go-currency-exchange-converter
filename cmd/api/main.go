@@ -32,9 +32,10 @@ func main() {
 		logger.Error("failed to open database", "error", err)
 		os.Exit(1)
 	}
+
 	defer func() {
 		if err := database.Close(); err != nil {
-			logger.Error("failed to close database", "error", err) // <-- Вот теперь можно так!
+			logger.Error("failed to close database", "error", err)
 		}
 	}()
 
