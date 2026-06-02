@@ -31,7 +31,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 5. start http server here (опущено)
+	// // 5. create logger
+	// logger := logger.New(cfg.Log.Level)
 
-	log.Println("server running on port:", cfg.App.Port)
+	// // 6. start http server here (опущено)
+
+	// // repository
+	// exchangeRepo := repository.NewExchangeRateRepository(dbConn)
+
+	// // service
+	// exchangeService := service.NewExchangeRateService(exchangeRepo)
+
+	// // handler
+	// exchangeHandler := handler.NewExchangeRateHandler(exchangeService)
+
+	// // router
+	// router := handler.NewRouter(exchangeHandler)
+
+	// // server
+	// srv := server.New(cfg, logger, router)
+
+	// log.Fatal(srv.Run())
+
 }

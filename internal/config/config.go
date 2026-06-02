@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -11,6 +12,14 @@ type Config struct {
 		Port  int  `yaml:"port"`
 		Debug bool `yaml:"debug"`
 	} `yaml:"app"`
+
+	Server struct {
+		ReadTimeout       time.Duration `yaml:"read_timeout"`
+		WriteTimeout      time.Duration `yaml:"write_timeout"`
+		IdleTimeout       time.Duration `yaml:"idle_timeout"`
+		ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
+		MaxHeaderBytes    int           `yaml:"max_header_bytes"`
+	} `yaml:"server"`
 
 	SQLite struct {
 		Path string `yaml:"path"`
