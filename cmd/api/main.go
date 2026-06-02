@@ -1,10 +1,14 @@
 package main
 
 import (
+	handler "currency-exchange-converter/internal/api"
 	"currency-exchange-converter/internal/config"
 	"currency-exchange-converter/internal/db"
+	"currency-exchange-converter/internal/logger"
+	"currency-exchange-converter/internal/server"
 	"flag"
 	"log"
+	"os"
 )
 
 func main() {
@@ -19,38 +23,43 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// 3. open sqlite
+	// 3. create logger
+	logger := logger.New(cfg.Log.Level)
+
+	// 4. open sqlite
 	database, err := db.Open(cfg.SQLite.Path)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("failed to open database", "error", err)
+		os.Exit(1)
 	}
+	defer func() {
+		if err := database.Close(); err != nil {
+			logger.Error("failed to close database", "error", err) // <-- Вот теперь можно так!
+		}
+	}()
 
-	// 4. run migrations
+	// 5. run migrations
 	err = db.RunMigrations(database, "migrations/sqlite/000001_init.sql")
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("failed to run database migrations", "error", err)
+		os.Exit(1)
 	}
 
-	// // 5. create logger
-	// logger := logger.New(cfg.Log.Level)
+	// repository
+	//exchangeRepo := repository.NewExchangeRateRepository(dbConn)
 
-	// // 6. start http server here (опущено)
+	// service
+	//exchangeService := service.NewExchangeRateService(exchangeRepo)
 
-	// // repository
-	// exchangeRepo := repository.NewExchangeRateRepository(dbConn)
+	// handler
+	//exchangeHandler := handler.NewExchangeRateHandler(exchangeService)
 
-	// // service
-	// exchangeService := service.NewExchangeRateService(exchangeRepo)
+	// router
+	router := handler.NewRouter()
 
-	// // handler
-	// exchangeHandler := handler.NewExchangeRateHandler(exchangeService)
+	// 6. start http server here (опущено)
+	srv := server.New(cfg, logger, router)
 
-	// // router
-	// router := handler.NewRouter(exchangeHandler)
-
-	// // server
-	// srv := server.New(cfg, logger, router)
-
-	// log.Fatal(srv.Run())
+	log.Fatal(srv.Run())
 
 }

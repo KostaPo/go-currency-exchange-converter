@@ -8,16 +8,16 @@ import (
 )
 
 type Server struct {
-	cfg    *config.Config
-	logger *slog.Logger
-	http   *http.Server
+	cfg        *config.Config
+	logger     *slog.Logger
+	httpServer *http.Server
 }
 
 func New(cfg *config.Config, logger *slog.Logger, router http.Handler) *Server {
 	return &Server{
 		cfg:    cfg,
 		logger: logger,
-		http: &http.Server{
+		httpServer: &http.Server{
 			Addr:              fmt.Sprintf(":%d", cfg.App.Port),
 			Handler:           router,
 			ReadTimeout:       cfg.Server.ReadTimeout,
@@ -29,11 +29,12 @@ func New(cfg *config.Config, logger *slog.Logger, router http.Handler) *Server {
 	}
 }
 
+// TODO добавить graceful shutdown
 func (s *Server) Run() error {
 	s.logger.Info("server started",
 		"port", s.cfg.App.Port,
 		"log_level", s.cfg.Log.Level,
 		"sqlite_path", s.cfg.SQLite.Path,
 	)
-	return s.http.ListenAndServe()
+	return s.httpServer.ListenAndServe()
 }
