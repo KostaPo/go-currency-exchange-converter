@@ -1,9 +1,10 @@
 package main
 
 import (
-	handler "currency-exchange-converter/internal/api"
 	"currency-exchange-converter/internal/config"
 	"currency-exchange-converter/internal/db"
+	"currency-exchange-converter/internal/health"
+	"currency-exchange-converter/internal/http"
 	"currency-exchange-converter/internal/logger"
 	"currency-exchange-converter/internal/server"
 	"flag"
@@ -55,8 +56,12 @@ func main() {
 	// handler
 	//exchangeHandler := handler.NewExchangeRateHandler(exchangeService)
 
+	healthService := health.NewService()
+	healthHandler := health.NewHandler(healthService)
 	// router
-	router := handler.NewRouter()
+	router := http.NewRouter(http.Handlers{
+		Health: healthHandler,
+	})
 
 	// 6. start http server here (опущено)
 	srv := server.New(cfg, logger, router)
