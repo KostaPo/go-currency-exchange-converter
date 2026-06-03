@@ -6,17 +6,12 @@ import (
 	"currency-exchange-converter/internal/health"
 )
 
-type Handlers struct {
-	Health *health.Handler
-}
-
-func NewRouter(h Handlers) *http.ServeMux {
+func NewRouter(
+	health *health.Handler,
+) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc(
-		"GET /api/v1/health",
-		h.Health.GetHealth,
-	)
+	health.RegisterRoutes(mux, "/api/v1")
 
 	return mux
 }

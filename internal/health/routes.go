@@ -2,6 +2,6 @@ package health
 
 import "net/http"
 
-func RegisterRoutes(mux *http.ServeMux, handler *Handler) {
-	mux.HandleFunc("GET /api/v1/health", handler.GetHealth)
+func (h *Handler) RegisterRoutes(mux *http.ServeMux, prefix string) {
+	mux.HandleFunc("GET "+prefix+"/health", h.GetHealth)
 }

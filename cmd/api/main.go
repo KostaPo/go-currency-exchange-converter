@@ -58,14 +58,12 @@ func main() {
 
 	healthService := health.NewService()
 	healthHandler := health.NewHandler(healthService)
+
 	// router
-	router := http.NewRouter(http.Handlers{
-		Health: healthHandler,
-	})
+	router := http.NewRouter(healthHandler)
 
 	// 6. start http server here (опущено)
 	srv := server.New(cfg, logger, router)
-
 	log.Fatal(srv.Run())
 
 }
