@@ -6,6 +6,37 @@ import (
 	"errors"
 )
 
+const (
+	queryGetAll = `
+        SELECT ID, Code, FullName, Sign
+		FROM Currencies
+		ORDER BY Code
+    `
+
+	queryGetByID = `
+        SELECT ID, Code, FullName, Sign
+        FROM currencies
+        WHERE id = $1
+    `
+
+	queryGetByCode = `
+        SELECT ID, Code, FullName, Sign
+        FROM currencies
+        WHERE code = $1
+    `
+
+	queryCreate = `
+        INSERT INTO currencies (Code, FullName, Sign)
+        VALUES ($1, $2, $3)
+        RETURNING id
+    `
+
+	queryDelete = `
+        DELETE FROM currencies
+        WHERE id = $1
+    `
+)
+
 var (
 	ErrNotFound      = errors.New("currency not found")
 	ErrAlreadyExists = errors.New("currency already exists")
@@ -31,12 +62,8 @@ func NewRepository(db *sql.DB) Repository {
 }
 
 func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
-	query := `
-		SELECT ID, Code, FullName, Sign
-		FROM Currencies
-		ORDER BY Code
-	`
-	rows, err := r.db.QueryContext(ctx, query)
+
+	rows, err := r.db.QueryContext(ctx, queryGetAll)
 	if err != nil {
 		return nil, err
 	}

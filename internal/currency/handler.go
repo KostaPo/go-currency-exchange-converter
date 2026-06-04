@@ -1,8 +1,10 @@
 package currency
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 type Handler struct {
@@ -14,7 +16,11 @@ func NewHandler(svc Service) *Handler {
 }
 
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	currencies, err := h.svc.GetAll(r.Context())
+
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	currencies, err := h.svc.GetAll(ctx)
 	if err != nil {
 		http.Error(w, "failed to get currencies", http.StatusInternalServerError)
 		return
