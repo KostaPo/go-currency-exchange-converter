@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"strings"
 )
 
 const (
@@ -22,10 +23,10 @@ const (
     `
 
 	queryCreate = `
-        INSERT INTO currencies (Code, FullName, Sign)
-        VALUES ($1, $2, $3)
-        RETURNING id
-    `
+    	INSERT INTO Currencies (Code, FullName, Sign)
+    	VALUES (?, ?, ?)
+    	RETURNING ID
+	`
 
 	queryDelete = `
         DELETE FROM currencies
@@ -59,9 +60,7 @@ func NewRepository(db *sql.DB) Repository {
 
 func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
 
-	// Repository логирует технические детали — SQL-операции.
-	// Debug уровень: в продакшне молчит, включается только при отладке.
-	slog.DebugContext(ctx, "executing query",
+	slog.DebugContext(ctx, "executing...",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "repository",
 		"query", "GetAll",
@@ -105,11 +104,10 @@ func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
 }
 
 func (r *repository) GetByCode(ctx context.Context, code string) (*Currency, error) {
-	slog.DebugContext(ctx, "executing query",
+	slog.DebugContext(ctx, "executing...",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "repository",
 		"query", "GetByCode",
-		"code", code,
 	)
 
 	var c Currency
@@ -131,14 +129,35 @@ func (r *repository) GetByCode(ctx context.Context, code string) (*Currency, err
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "repository",
 		"query", "GetByCode",
-		"code", code,
 	)
 
 	return &c, nil
 }
 
 func (r *repository) Create(ctx context.Context, c *Currency) error {
-	// реализация запроса к БД
+	slog.DebugContext(ctx, "executing...",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "Create",
+	)
+
+	err := r.db.QueryRowContext(ctx, queryCreate,
+		c.Code,
+		c.FullName,
+		c.Sign).Scan(&c.ID)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return ErrAlreadyExists
+		}
+		logRepoError(ctx, "Create", err)
+		return err
+	}
+	slog.DebugContext(ctx, "query done",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "Create",
+		"id", c.ID,
+	)
 	return nil
 }
 

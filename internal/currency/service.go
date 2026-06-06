@@ -5,11 +5,16 @@ import (
 	"currency-exchange-converter/internal/middleware"
 	"errors"
 	"log/slog"
+	"regexp"
+	"strings"
 )
+
+var codeChecker = regexp.MustCompile(`^[A-Z]{3}$`)
 
 type Service interface {
 	GetAll(ctx context.Context) ([]*Currency, error)
 	GetByCode(ctx context.Context, code string) (*Currency, error)
+	Create(ctx context.Context, code, fullName, sign string) (*Currency, error)
 }
 
 type service struct {
@@ -79,4 +84,32 @@ func (s *service) GetByCode(ctx context.Context, code string) (*Currency, error)
 	)
 
 	return currency, nil
+}
+
+func (s *service) Create(ctx context.Context, code, fullName, sign string) (*Currency, error) {
+	if !codeChecker.MatchString(code) {
+		return nil, ErrInvalidCode
+	}
+	if strings.TrimSpace(fullName) == "" {
+		return nil, ErrInvalidFullName
+	}
+
+	slog.InfoContext(ctx, "creating currency",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "service",
+		"code", code,
+	)
+
+	c := &Currency{Code: code, FullName: fullName, Sign: sign}
+	if err := s.repo.Create(ctx, c); err != nil {
+		return nil, err
+	}
+
+	slog.InfoContext(ctx, "currency created",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "service",
+		"code", code,
+	)
+
+	return c, nil
 }
