@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
-	"time"
 )
 
 const (
@@ -74,26 +73,9 @@ func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
 		"query", "GetAll",
 	)
 
-	time.Sleep(5 * time.Second)
-
 	rows, err := r.db.QueryContext(ctx, queryGetAll)
 	if err != nil {
-		// Различаем отмену клиентом и реальную ошибку БД —
-		// разные уровни логирования, разная реакция на мониторинге.
-		if errors.Is(err, context.Canceled) {
-			slog.WarnContext(ctx, "client disconnected",
-				"request_id", middleware.IDFromContext(ctx),
-				"layer", "repository",
-				"query", "GetAll",
-			)
-			return nil, err
-		}
-		slog.ErrorContext(ctx, "query failed",
-			"request_id", middleware.IDFromContext(ctx),
-			"layer", "repository",
-			"query", "GetAll",
-			"error", err,
-		)
+		logRepoError(ctx, "GetAll", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -114,11 +96,7 @@ func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		slog.ErrorContext(ctx, "rows iteration error",
-			"request_id", middleware.IDFromContext(ctx),
-			"layer", "repository",
-			"error", err,
-		)
+		logRepoError(ctx, "GetAll.Rows", err)
 		return nil, err
 	}
 
@@ -145,4 +123,25 @@ func (r *repository) GetByID(ctx context.Context, id int) (*Currency, error) {
 func (r *repository) Delete(ctx context.Context, id int) error {
 	// реализация запроса к БД
 	return nil
+}
+
+// --- helper ---
+
+// logRepoError — хелпер для единообразного логирования ошибок репозитория.
+// Различает отмену клиентом (Warn) и реальную ошибку БД (Error) —
+func logRepoError(ctx context.Context, query string, err error) {
+	if errors.Is(err, context.Canceled) {
+		slog.WarnContext(ctx, "client disconnected",
+			"request_id", middleware.IDFromContext(ctx),
+			"layer", "repository",
+			"query", query,
+		)
+		return
+	}
+	slog.ErrorContext(ctx, "query failed",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", query,
+		"error", err,
+	)
 }

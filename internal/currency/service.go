@@ -20,9 +20,6 @@ func NewService(repo Repository) Service {
 
 func (s *service) GetAll(ctx context.Context) ([]*Currency, error) {
 
-	// Service логирует бизнес-событие — не HTTP-детали, а то что
-	// происходит с данными. request_id тот же что в handler —
-	// контекст прокинут сквозь все слои.
 	slog.InfoContext(ctx, "fetching all currencies",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "service",

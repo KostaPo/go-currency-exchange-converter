@@ -22,9 +22,6 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 
-	// Handler логирует HTTP-событие: какой endpoint вызван и кем.
-	// request_id уже лежит в контексте — RequestID middleware положил его
-	// до того как запрос дошёл сюда.
 	slog.InfoContext(ctx, "get all currencies request",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "handler",
