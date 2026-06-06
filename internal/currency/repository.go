@@ -2,8 +2,11 @@ package currency
 
 import (
 	"context"
+	"currency-exchange-converter/internal/middleware"
 	"database/sql"
 	"errors"
+	"log/slog"
+	"time"
 )
 
 const (
@@ -63,8 +66,34 @@ func NewRepository(db *sql.DB) Repository {
 
 func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
 
+	// Repository логирует технические детали — SQL-операции.
+	// Debug уровень: в продакшне молчит, включается только при отладке.
+	slog.DebugContext(ctx, "executing query",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "GetAll",
+	)
+
+	time.Sleep(5 * time.Second)
+
 	rows, err := r.db.QueryContext(ctx, queryGetAll)
 	if err != nil {
+		// Различаем отмену клиентом и реальную ошибку БД —
+		// разные уровни логирования, разная реакция на мониторинге.
+		if errors.Is(err, context.Canceled) {
+			slog.WarnContext(ctx, "client disconnected",
+				"request_id", middleware.IDFromContext(ctx),
+				"layer", "repository",
+				"query", "GetAll",
+			)
+			return nil, err
+		}
+		slog.ErrorContext(ctx, "query failed",
+			"request_id", middleware.IDFromContext(ctx),
+			"layer", "repository",
+			"query", "GetAll",
+			"error", err,
+		)
 		return nil, err
 	}
 	defer rows.Close()
@@ -73,22 +102,32 @@ func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
 
 	for rows.Next() {
 		var c Currency
-
-		if err := rows.Scan(
-			&c.ID,
-			&c.Code,
-			&c.FullName,
-			&c.Sign,
-		); err != nil {
+		if err := rows.Scan(&c.ID, &c.Code, &c.FullName, &c.Sign); err != nil {
+			slog.ErrorContext(ctx, "failed to scan row",
+				"request_id", middleware.IDFromContext(ctx),
+				"layer", "repository",
+				"error", err,
+			)
 			return nil, err
 		}
-
 		result = append(result, &c)
 	}
 
 	if err := rows.Err(); err != nil {
+		slog.ErrorContext(ctx, "rows iteration error",
+			"request_id", middleware.IDFromContext(ctx),
+			"layer", "repository",
+			"error", err,
+		)
 		return nil, err
 	}
+
+	slog.DebugContext(ctx, "query done",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "GetAll",
+		"rows", len(result),
+	)
 
 	return result, nil
 }

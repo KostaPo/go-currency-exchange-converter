@@ -10,6 +10,7 @@ import (
 	"currency-exchange-converter/internal/server"
 	"flag"
 	"log"
+	"log/slog"
 	"os"
 )
 
@@ -24,6 +25,7 @@ func main() {
 	}
 
 	logger := logger.New(cfg.Log.Level)
+	slog.SetDefault(logger)
 
 	database, err := db.Open(cfg.SQLite.Path)
 	if err != nil {
@@ -50,9 +52,9 @@ func main() {
 	healthService := health.NewService()
 	healthHandler := health.NewHandler(healthService)
 
-	router := http.NewRouter(healthHandler, currencyHandler)
+	muxRouter := http.NewRouter(healthHandler, currencyHandler)
 
-	srv := server.New(cfg, logger, router)
+	srv := server.New(cfg, logger, muxRouter)
 	log.Fatal(srv.Run())
 
 }
