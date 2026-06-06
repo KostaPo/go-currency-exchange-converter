@@ -15,16 +15,10 @@ const (
 		ORDER BY Code
     `
 
-	queryGetByID = `
-        SELECT ID, Code, FullName, Sign
-        FROM currencies
-        WHERE id = $1
-    `
-
 	queryGetByCode = `
         SELECT ID, Code, FullName, Sign
-        FROM currencies
-        WHERE code = $1
+    	FROM Currencies
+    	WHERE Code = ?
     `
 
 	queryCreate = `
@@ -51,7 +45,7 @@ var (
 type Repository interface {
 	Create(ctx context.Context, c *Currency) error
 	GetAll(ctx context.Context) ([]*Currency, error)
-	GetByID(ctx context.Context, id int) (*Currency, error)
+	GetByCode(ctx context.Context, code string) (*Currency, error)
 	Delete(ctx context.Context, id int) error
 }
 
@@ -110,14 +104,42 @@ func (r *repository) GetAll(ctx context.Context) ([]*Currency, error) {
 	return result, nil
 }
 
+func (r *repository) GetByCode(ctx context.Context, code string) (*Currency, error) {
+	slog.DebugContext(ctx, "executing query",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "GetByCode",
+		"code", code,
+	)
+
+	var c Currency
+	err := r.db.QueryRowContext(ctx, queryGetByCode, code).Scan(
+		&c.ID,
+		&c.Code,
+		&c.FullName,
+		&c.Sign,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		logRepoError(ctx, "GetByCode", err)
+		return nil, err
+	}
+
+	slog.DebugContext(ctx, "query done",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "GetByCode",
+		"code", code,
+	)
+
+	return &c, nil
+}
+
 func (r *repository) Create(ctx context.Context, c *Currency) error {
 	// реализация запроса к БД
 	return nil
-}
-
-func (r *repository) GetByID(ctx context.Context, id int) (*Currency, error) {
-	// реализация запроса к БД
-	return nil, nil
 }
 
 func (r *repository) Delete(ctx context.Context, id int) error {
