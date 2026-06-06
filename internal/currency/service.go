@@ -86,11 +86,11 @@ func (s *service) GetByCode(ctx context.Context, code string) (*Currency, error)
 	return currency, nil
 }
 
-func (s *service) Create(ctx context.Context, code, fullName, sign string) (*Currency, error) {
+func (s *service) Create(ctx context.Context, code, name, sign string) (*Currency, error) {
 	if !codeChecker.MatchString(code) {
 		return nil, ErrInvalidCode
 	}
-	if strings.TrimSpace(fullName) == "" {
+	if strings.TrimSpace(name) == "" {
 		return nil, ErrInvalidFullName
 	}
 
@@ -100,7 +100,7 @@ func (s *service) Create(ctx context.Context, code, fullName, sign string) (*Cur
 		"code", code,
 	)
 
-	c := &Currency{Code: code, FullName: fullName, Sign: sign}
+	c := &Currency{Code: code, FullName: name, Sign: sign}
 	if err := s.repo.Create(ctx, c); err != nil {
 		return nil, err
 	}

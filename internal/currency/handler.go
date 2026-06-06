@@ -90,7 +90,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Code     string `json:"code"`
-		FullName string `json:"full_name"`
+		FullName string `json:"name"`
 		Sign     string `json:"sign"`
 	}
 
