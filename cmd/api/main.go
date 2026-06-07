@@ -51,7 +51,7 @@ func main() {
 	currencyHandler := currency.NewHandler(currencyService)
 
 	exchangerateRepo := exchangerate.NewRepository(database)
-	exchangerateService := exchangerate.NewService(exchangerateRepo)
+	exchangerateService := exchangerate.NewService(exchangerateRepo, currencyRepo)
 	exchangerateHandler := exchangerate.NewHandler(exchangerateService)
 
 	healthService := health.NewService()

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"strings"
 )
 
 const (
@@ -51,16 +52,27 @@ const (
 
 	WHERE bc.Code = ? AND tc.Code = ?
 	`
+
+	queryCreate = `
+	INSERT INTO ExchangeRates (BaseCurrencyId, TargetCurrencyId, Rate)
+	VALUES (
+		(SELECT ID FROM Currencies WHERE Code = ?),
+		(SELECT ID FROM Currencies WHERE Code = ?),
+		?
+	)
+	`
 )
 
 var (
-	ErrNotFound      = errors.New("exchange rate not found")
-	ErrAlreadyExists = errors.New("ExchangeRate already exists")
+	ErrNotFound         = errors.New("exchange rate not found")
+	ErrAlreadyExists    = errors.New("ExchangeRate already exists")
+	ErrCurrencyNotFound = errors.New("currency not found")
 )
 
 type Repository interface {
 	GetAll(ctx context.Context) ([]*ExchangeRate, error)
 	GetByPair(ctx context.Context, baseCode, targetCode string) (*ExchangeRate, error)
+	Create(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error)
 }
 
 type repository struct {
@@ -164,6 +176,25 @@ func (r *repository) GetByPair(ctx context.Context, baseCode, targetCode string)
 
 	return &er, nil
 
+}
+
+func (r *repository) Create(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error) {
+	slog.DebugContext(ctx, "executing...",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "Create",
+	)
+
+	_, err := r.db.ExecContext(ctx, queryCreate, baseCode, targetCode, rate)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return nil, ErrAlreadyExists
+		}
+		logRepoError(ctx, "Create.Insert", err)
+		return nil, err
+	}
+
+	return r.GetByPair(ctx, baseCode, targetCode)
 }
 
 // logRepoError — хелпер для единообразного логирования ошибок репозитория.

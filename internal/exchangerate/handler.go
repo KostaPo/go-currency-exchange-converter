@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -80,4 +81,54 @@ func (h *Handler) GetByPair(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(rate)
+}
+
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	baseCode := strings.ToUpper(r.FormValue("baseCurrencyCode"))
+	targetCode := strings.ToUpper(r.FormValue("targetCurrencyCode"))
+	rateStr := r.FormValue("rate")
+
+	if baseCode == "" || targetCode == "" || rateStr == "" {
+		http.Error(w, "baseCurrencyCode, targetCurrencyCode and rate are required", http.StatusBadRequest)
+		return
+	}
+
+	rate, err := strconv.ParseFloat(rateStr, 64)
+	if err != nil {
+		http.Error(w, "invalid rate value", http.StatusBadRequest)
+		return
+	}
+
+	slog.InfoContext(ctx, "create exchange rate request",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "handler",
+		"base", baseCode,
+		"target", targetCode,
+		"rate", rate,
+	)
+
+	er, err := h.svc.Create(ctx, baseCode, targetCode, rate)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrAlreadyExists):
+			http.Error(w, "exchange rate already exists", http.StatusConflict)
+		case strings.Contains(err.Error(), "not found"):
+			http.Error(w, err.Error(), http.StatusNotFound)
+		default:
+			slog.ErrorContext(ctx, "failed to create exchange rate",
+				"request_id", middleware.IDFromContext(ctx),
+				"layer", "handler",
+				"error", err,
+			)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(er)
 }
