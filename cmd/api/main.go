@@ -5,6 +5,7 @@ import (
 	"currency-exchange-converter/internal/config"
 	"currency-exchange-converter/internal/currency"
 	"currency-exchange-converter/internal/db"
+	"currency-exchange-converter/internal/exchangerate"
 	"currency-exchange-converter/internal/health"
 	"currency-exchange-converter/internal/logger"
 	"currency-exchange-converter/internal/server"
@@ -49,10 +50,14 @@ func main() {
 	currencyService := currency.NewService(currencyRepo)
 	currencyHandler := currency.NewHandler(currencyService)
 
+	exchangerateRepo := exchangerate.NewRepository(database)
+	exchangerateService := exchangerate.NewService(exchangerateRepo)
+	exchangerateHandler := exchangerate.NewHandler(exchangerateService)
+
 	healthService := health.NewService()
 	healthHandler := health.NewHandler(healthService)
 
-	muxRouter := http.NewRouter(healthHandler, currencyHandler)
+	muxRouter := http.NewRouter(healthHandler, currencyHandler, exchangerateHandler)
 
 	srv := server.New(cfg, logger, muxRouter)
 	log.Fatal(srv.Run())
