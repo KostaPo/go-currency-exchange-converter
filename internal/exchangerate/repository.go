@@ -30,19 +30,37 @@ const (
 
 	ORDER BY er.ID
 `
+	queryGetByPair = `
+	SELECT
+		er.ID,
+		er.Rate,
+
+		bc.ID       AS base_id,
+		bc.Code     AS base_code,
+		bc.FullName AS base_full_name,
+		bc.Sign     AS base_sign,
+
+		tc.ID       AS target_id,
+		tc.Code     AS target_code,
+		tc.FullName AS target_full_name,
+		tc.Sign     AS target_sign
+
+	FROM ExchangeRates er
+		JOIN Currencies bc ON bc.ID = er.BaseCurrencyId
+		JOIN Currencies tc ON tc.ID = er.TargetCurrencyId
+
+	WHERE bc.Code = ? AND tc.Code = ?
+	`
 )
 
 var (
-	ErrNotFound      = errors.New("currency not found")
-	ErrAlreadyExists = errors.New("currency already exists")
-
-	ErrInvalidID       = errors.New("invalid currency id")
-	ErrInvalidCode     = errors.New("currency code must be 3 uppercase letters")
-	ErrInvalidFullName = errors.New("currency full name is required")
+	ErrNotFound      = errors.New("exchange rate not found")
+	ErrAlreadyExists = errors.New("ExchangeRate already exists")
 )
 
 type Repository interface {
 	GetAll(ctx context.Context) ([]*ExchangeRate, error)
+	GetByPair(ctx context.Context, baseCode, targetCode string) (*ExchangeRate, error)
 }
 
 type repository struct {
@@ -54,7 +72,7 @@ func NewRepository(db *sql.DB) Repository {
 }
 
 func (r *repository) GetAll(ctx context.Context) ([]*ExchangeRate, error) {
-	slog.DebugContext(ctx, "executing query",
+	slog.DebugContext(ctx, "executing...",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "repository",
 		"query", "GetAll",
@@ -104,6 +122,48 @@ func (r *repository) GetAll(ctx context.Context) ([]*ExchangeRate, error) {
 	)
 
 	return result, nil
+}
+
+func (r *repository) GetByPair(ctx context.Context, baseCode, targetCode string) (*ExchangeRate, error) {
+	slog.DebugContext(ctx, "executing...",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "GetByPair",
+		"base", baseCode,
+		"target", targetCode,
+	)
+
+	var er ExchangeRate
+	err := r.db.QueryRowContext(ctx, queryGetByPair, baseCode, targetCode).Scan(
+		&er.ID,
+		&er.Rate,
+		&er.BaseCurrency.ID,
+		&er.BaseCurrency.Code,
+		&er.BaseCurrency.FullName,
+		&er.BaseCurrency.Sign,
+		&er.TargetCurrency.ID,
+		&er.TargetCurrency.Code,
+		&er.TargetCurrency.FullName,
+		&er.TargetCurrency.Sign,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		logRepoError(ctx, "GetByPair", err)
+		return nil, err
+	}
+
+	slog.DebugContext(ctx, "query done",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "GetByPair",
+		"base", baseCode,
+		"target", targetCode,
+	)
+
+	return &er, nil
+
 }
 
 // logRepoError — хелпер для единообразного логирования ошибок репозитория.
