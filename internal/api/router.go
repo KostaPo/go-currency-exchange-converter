@@ -22,8 +22,9 @@ func NewRouter(
 
 	exchangerateHandler.RegisterRoutes(mux, "/api/v1")
 
-	return middleware.Recovery(
-		middleware.RequestID(
-			middleware.Logger(mux)))
+	return middleware.CORS(
+		middleware.Recovery(
+			middleware.RequestID(
+				middleware.Logger(mux))))
 
 }

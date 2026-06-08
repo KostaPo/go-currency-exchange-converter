@@ -34,9 +34,6 @@ func RequestID(next http.Handler) http.Handler {
 	})
 }
 
-// IDFromContext достаёт request_id из context. Возвращает "" если
-// RequestID middleware не отработал — это и есть нормальное
-// значение по умолчанию.
 func IDFromContext(ctx context.Context) string {
 	if v, ok := ctx.Value(requestIDKey).(string); ok {
 		return v
