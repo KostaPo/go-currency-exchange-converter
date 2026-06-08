@@ -1,6 +1,14 @@
 services:
-  currency-exchanger:
-    build: .
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
     volumes:
-      - ./data:/app/data
-    command: ["./app", "-config=configs/config.docker.yml"]
+      - sqlite_data:/app/data
+    command: ["./server", "-config", "configs/config.docker.yml"]
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
