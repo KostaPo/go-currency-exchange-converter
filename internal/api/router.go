@@ -17,10 +17,12 @@ func NewRouter(
 	mux := http.NewServeMux()
 
 	health.RegisterRoutes(mux, "/api/v1")
-
 	currencyHandler.RegisterRoutes(mux, "/api/v1")
-
 	exchangerateHandler.RegisterRoutes(mux, "/api/v1")
+
+	// Раздаём фронтенд
+	fs := http.FileServer(http.Dir("./frontend"))
+	mux.Handle("/", fs)
 
 	return middleware.CORS(
 		middleware.Recovery(

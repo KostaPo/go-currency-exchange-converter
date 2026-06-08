@@ -28,6 +28,7 @@ COPY --from=builder /app/server .
 COPY --chown=app:app configs/ ./configs/
 COPY --chown=app:app migrations/ ./migrations/
 COPY --chown=app:app data/app.db ./data/app.db.seed
+COPY --chown=app:app frontend/ ./frontend/
 
 RUN chown -R app:app /app
 
