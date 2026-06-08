@@ -24,9 +24,8 @@ func NewRouter(
 	fs := http.FileServer(http.Dir("./frontend"))
 	mux.Handle("/", fs)
 
-	return middleware.CORS(
-		middleware.Recovery(
-			middleware.RequestID(
-				middleware.Logger(mux))))
+	return middleware.Recovery(
+		middleware.RequestID(
+			middleware.Logger(mux)))
 
 }
