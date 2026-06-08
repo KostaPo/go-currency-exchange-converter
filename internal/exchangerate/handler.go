@@ -20,8 +20,13 @@ func NewHandler(svc Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
+func writeError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": message})
+}
 
+func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
@@ -32,7 +37,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	rates, err := h.svc.GetAll(ctx)
 	if err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		writeError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -47,7 +52,7 @@ func (h *Handler) GetByPair(w http.ResponseWriter, r *http.Request) {
 
 	pair := r.PathValue("pair")
 	if len(pair) != 6 {
-		http.Error(w, "invalid currency pair, expected format: USDRUB", http.StatusBadRequest)
+		writeError(w, "invalid currency pair, expected format: USDRUB", http.StatusBadRequest)
 		return
 	}
 
@@ -64,7 +69,7 @@ func (h *Handler) GetByPair(w http.ResponseWriter, r *http.Request) {
 	rate, err := h.svc.GetByPair(ctx, baseCode, targetCode)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			http.Error(w, "exchange rate not found", http.StatusNotFound)
+			writeError(w, "exchange rate not found", http.StatusNotFound)
 			return
 		}
 		slog.ErrorContext(ctx, "failed to get exchange rate",
@@ -74,7 +79,7 @@ func (h *Handler) GetByPair(w http.ResponseWriter, r *http.Request) {
 			"target", targetCode,
 			"error", err,
 		)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		writeError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -92,13 +97,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	rateStr := r.FormValue("rate")
 
 	if baseCode == "" || targetCode == "" || rateStr == "" {
-		http.Error(w, "baseCurrencyCode, targetCurrencyCode and rate are required", http.StatusBadRequest)
+		writeError(w, "baseCurrencyCode, targetCurrencyCode and rate are required", http.StatusBadRequest)
 		return
 	}
 
 	rate, err := strconv.ParseFloat(rateStr, 64)
 	if err != nil {
-		http.Error(w, "invalid rate value", http.StatusBadRequest)
+		writeError(w, "invalid rate value", http.StatusBadRequest)
 		return
 	}
 
@@ -114,16 +119,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrAlreadyExists):
-			http.Error(w, "exchange rate already exists", http.StatusConflict)
+			writeError(w, "exchange rate already exists", http.StatusConflict)
 		case strings.Contains(err.Error(), "not found"):
-			http.Error(w, err.Error(), http.StatusNotFound)
+			writeError(w, err.Error(), http.StatusNotFound)
 		default:
 			slog.ErrorContext(ctx, "failed to create exchange rate",
 				"request_id", middleware.IDFromContext(ctx),
 				"layer", "handler",
 				"error", err,
 			)
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			writeError(w, "internal server error", http.StatusInternalServerError)
 		}
 		return
 	}

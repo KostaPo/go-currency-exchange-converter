@@ -18,8 +18,13 @@ func NewHandler(svc Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
+func writeError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"message": message})
+}
 
+func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
@@ -35,7 +40,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 			"layer", "handler",
 			"error", err,
 		)
-		http.Error(w, "failed to get currencies", http.StatusInternalServerError)
+		writeError(w, "failed to get currencies", http.StatusInternalServerError)
 		return
 	}
 
@@ -45,13 +50,12 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetByCode(w http.ResponseWriter, r *http.Request) {
-
 	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 	defer cancel()
 
 	code := r.PathValue("code")
 	if code == "" {
-		http.Error(w, "code is required", http.StatusBadRequest)
+		writeError(w, "code is required", http.StatusBadRequest)
 		return
 	}
 
@@ -66,7 +70,7 @@ func (h *Handler) GetByCode(w http.ResponseWriter, r *http.Request) {
 	currency, err := h.svc.GetByCode(ctx, code)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			http.Error(w, "currency not found", http.StatusNotFound)
+			writeError(w, "currency not found", http.StatusNotFound)
 			return
 		}
 		slog.ErrorContext(ctx, "failed to get currency",
@@ -75,7 +79,7 @@ func (h *Handler) GetByCode(w http.ResponseWriter, r *http.Request) {
 			"code", code,
 			"error", err,
 		)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		writeError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -88,33 +92,31 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 	defer cancel()
 
-	var req struct {
-		Code     string `json:"code"`
-		FullName string `json:"name"`
-		Sign     string `json:"sign"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err := r.ParseForm(); err != nil {
+		writeError(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	code := r.FormValue("code")
+	fullName := r.FormValue("name")
+	sign := r.FormValue("sign")
 
 	slog.InfoContext(ctx, "create currency request",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "handler",
-		"code", req.Code,
+		"code", code,
 	)
 
-	c, err := h.svc.Create(ctx, req.Code, req.FullName, req.Sign)
+	c, err := h.svc.Create(ctx, code, fullName, sign)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidCode),
 			errors.Is(err, ErrInvalidFullName):
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			writeError(w, err.Error(), http.StatusBadRequest)
 		case errors.Is(err, ErrAlreadyExists):
-			http.Error(w, "currency already exists", http.StatusConflict)
+			writeError(w, "currency already exists", http.StatusConflict)
 		default:
-			http.Error(w, "internal server error", http.StatusInternalServerError)
+			writeError(w, "internal server error", http.StatusInternalServerError)
 		}
 		return
 	}
