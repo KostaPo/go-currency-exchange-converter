@@ -13,6 +13,7 @@ type Service interface {
 	GetAll(ctx context.Context) ([]*ExchangeRate, error)
 	GetByPair(ctx context.Context, baseCode, targetCode string) (*ExchangeRate, error)
 	Create(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error)
+	Update(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error)
 }
 
 type service struct {
@@ -54,8 +55,6 @@ func (s *service) GetByPair(ctx context.Context, baseCode, targetCode string) (*
 	slog.InfoContext(ctx, "fetching exchange rate by pair",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "service",
-		"base", baseCode,
-		"target", targetCode,
 	)
 
 	rate, err := s.repo.GetByPair(ctx, baseCode, targetCode)
@@ -82,8 +81,6 @@ func (s *service) GetByPair(ctx context.Context, baseCode, targetCode string) (*
 	slog.InfoContext(ctx, "exchange rate fetched",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "service",
-		"base", baseCode,
-		"target", targetCode,
 	)
 
 	return rate, nil
@@ -93,8 +90,6 @@ func (s *service) Create(ctx context.Context, baseCode, targetCode string, rate 
 	slog.InfoContext(ctx, "creating exchange rate",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "service",
-		"base", baseCode,
-		"target", targetCode,
 	)
 
 	// проверяем базовую валюту
@@ -129,6 +124,39 @@ func (s *service) Create(ctx context.Context, baseCode, targetCode string, rate 
 	}
 
 	slog.InfoContext(ctx, "exchange rate created",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "service",
+	)
+
+	return er, nil
+}
+
+func (s *service) Update(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error) {
+	slog.InfoContext(ctx, "updating exchange rate",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "service",
+	)
+
+	er, err := s.repo.Update(ctx, baseCode, targetCode, rate)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			slog.InfoContext(ctx, "exchange rate not found",
+				"request_id", middleware.IDFromContext(ctx),
+				"layer", "service",
+				"base", baseCode,
+				"target", targetCode,
+			)
+			return nil, ErrNotFound
+		}
+		slog.ErrorContext(ctx, "failed to update exchange rate",
+			"request_id", middleware.IDFromContext(ctx),
+			"layer", "service",
+			"error", err,
+		)
+		return nil, err
+	}
+
+	slog.InfoContext(ctx, "exchange rate updated",
 		"request_id", middleware.IDFromContext(ctx),
 		"layer", "service",
 		"base", baseCode,

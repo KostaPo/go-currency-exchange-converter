@@ -61,6 +61,13 @@ const (
 		?
 	)
 	`
+
+	queryUpdate = `
+	UPDATE ExchangeRates
+	SET Rate = ?
+	WHERE BaseCurrencyId = (SELECT ID FROM Currencies WHERE Code = ?)
+	AND TargetCurrencyId = (SELECT ID FROM Currencies WHERE Code = ?)
+`
 )
 
 var (
@@ -73,6 +80,7 @@ type Repository interface {
 	GetAll(ctx context.Context) ([]*ExchangeRate, error)
 	GetByPair(ctx context.Context, baseCode, targetCode string) (*ExchangeRate, error)
 	Create(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error)
+	Update(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error)
 }
 
 type repository struct {
@@ -192,6 +200,36 @@ func (r *repository) Create(ctx context.Context, baseCode, targetCode string, ra
 		}
 		logRepoError(ctx, "Create.Insert", err)
 		return nil, err
+	}
+
+	return r.GetByPair(ctx, baseCode, targetCode)
+}
+
+func (r *repository) Update(ctx context.Context, baseCode, targetCode string, rate float64) (*ExchangeRate, error) {
+	slog.DebugContext(ctx, "executing...",
+		"request_id", middleware.IDFromContext(ctx),
+		"layer", "repository",
+		"query", "Update",
+	)
+
+	result, err := r.db.ExecContext(ctx, queryUpdate, rate, baseCode, targetCode)
+	if err != nil {
+		logRepoError(ctx, "Update", err)
+		return nil, err
+	}
+	if err != nil {
+		logRepoError(ctx, "Update", err)
+		return nil, err
+	}
+
+	// если RowsAffected == 0 — пара не найдена
+	rows, err := result.RowsAffected()
+	if err != nil {
+		logRepoError(ctx, "Update.RowsAffected", err)
+		return nil, err
+	}
+	if rows == 0 {
+		return nil, ErrNotFound
 	}
 
 	return r.GetByPair(ctx, baseCode, targetCode)
