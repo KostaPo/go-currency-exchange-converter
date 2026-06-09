@@ -217,10 +217,6 @@ func (r *repository) Update(ctx context.Context, baseCode, targetCode string, ra
 		logRepoError(ctx, "Update", err)
 		return nil, err
 	}
-	if err != nil {
-		logRepoError(ctx, "Update", err)
-		return nil, err
-	}
 
 	// если RowsAffected == 0 — пара не найдена
 	rows, err := result.RowsAffected()
@@ -233,6 +229,7 @@ func (r *repository) Update(ctx context.Context, baseCode, targetCode string, ra
 	}
 
 	return r.GetByPair(ctx, baseCode, targetCode)
+
 }
 
 // logRepoError — хелпер для единообразного логирования ошибок репозитория.
