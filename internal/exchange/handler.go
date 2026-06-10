@@ -29,13 +29,13 @@ func (h *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
 	amountStr := r.URL.Query().Get("amount")
 
 	if from == "" || to == "" || amountStr == "" {
-		http.Error(w, "from, to and amount are required", http.StatusBadRequest)
+		writeError(w, "from, to and amount are required", http.StatusBadRequest)
 		return
 	}
 
 	amount, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil || amount <= 0 {
-		http.Error(w, "invalid amount value", http.StatusBadRequest)
+		writeError(w, "invalid amount value", http.StatusBadRequest)
 		return
 	}
 
@@ -50,7 +50,7 @@ func (h *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
 	result, err := h.svc.Convert(ctx, from, to, amount)
 	if err != nil {
 		if errors.Is(err, ErrConversionNotPossible) {
-			http.Error(w, "exchange rate not found for this pair", http.StatusNotFound)
+			writeError(w, "exchange rate not found for this pair", http.StatusNotFound)
 			return
 		}
 		slog.ErrorContext(ctx, "failed to convert currency",
@@ -60,7 +60,7 @@ func (h *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
 			"to", to,
 			"error", err,
 		)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		writeError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 

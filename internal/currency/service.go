@@ -93,6 +93,12 @@ func (s *service) Create(ctx context.Context, code, name, sign string) (*Currenc
 	if strings.TrimSpace(name) == "" {
 		return nil, ErrInvalidFullName
 	}
+	if strings.TrimSpace(sign) == "" { // <- TC-024, TC-025
+		return nil, ErrInvalidSign
+	}
+	if len([]rune(sign)) > 3 { // <- TC-025a
+		return nil, ErrInvalidSign
+	}
 
 	slog.InfoContext(ctx, "creating currency",
 		"request_id", middleware.IDFromContext(ctx),

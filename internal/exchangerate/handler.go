@@ -138,7 +138,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	pair := r.PathValue("pair")
 	if len(pair) != 6 {
-		http.Error(w, "invalid currency pair, expected format: USDRUB", http.StatusBadRequest)
+		writeError(w, "invalid currency pair, expected format: USDRUB", http.StatusBadRequest)
 		return
 	}
 
@@ -147,13 +147,13 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	rateStr := r.FormValue("rate")
 	if rateStr == "" {
-		http.Error(w, "rate is required", http.StatusBadRequest)
+		writeError(w, "rate is required", http.StatusBadRequest)
 		return
 	}
 
 	rate, err := strconv.ParseFloat(rateStr, 64)
 	if err != nil {
-		http.Error(w, "invalid rate value", http.StatusBadRequest)
+		writeError(w, "invalid rate value", http.StatusBadRequest)
 		return
 	}
 
@@ -168,7 +168,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	er, err := h.svc.Update(ctx, baseCode, targetCode, rate)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			http.Error(w, "exchange rate not found", http.StatusNotFound)
+			writeError(w, "exchange rate not found", http.StatusNotFound)
 			return
 		}
 		slog.ErrorContext(ctx, "failed to update exchange rate",
@@ -176,7 +176,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			"layer", "handler",
 			"error", err,
 		)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		writeError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 

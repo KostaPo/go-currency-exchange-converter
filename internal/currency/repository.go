@@ -41,6 +41,7 @@ var (
 	ErrInvalidID       = errors.New("invalid currency id")
 	ErrInvalidCode     = errors.New("currency code must be 3 uppercase letters")
 	ErrInvalidFullName = errors.New("currency full name is required")
+	ErrInvalidSign     = errors.New("currency sign is required and must be 3 characters or less")
 )
 
 type Repository interface {

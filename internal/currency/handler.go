@@ -104,6 +104,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	c, err := h.svc.Create(ctx, code, fullName, sign)
 	if err != nil {
 		switch {
+		case errors.Is(err, ErrInvalidSign):
+			writeError(w, err.Error(), http.StatusBadRequest)
 		case errors.Is(err, ErrInvalidCode),
 			errors.Is(err, ErrInvalidFullName):
 			writeError(w, err.Error(), http.StatusBadRequest)
