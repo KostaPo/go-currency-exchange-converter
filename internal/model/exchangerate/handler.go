@@ -86,12 +86,27 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 
+	if err := r.ParseForm(); err != nil {
+		writeError(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
 	baseCode := strings.ToUpper(strings.TrimSpace(r.FormValue("baseCurrencyCode")))
 	targetCode := strings.ToUpper(strings.TrimSpace(r.FormValue("targetCurrencyCode")))
 	rateStr := r.FormValue("rate")
 
-	if baseCode == "" || targetCode == "" || rateStr == "" {
-		writeError(w, "baseCurrencyCode, targetCurrencyCode and rate are required", http.StatusBadRequest)
+	if baseCode == "" {
+		writeError(w, "baseCurrencyCode is required", http.StatusBadRequest)
+		return
+	}
+
+	if targetCode == "" {
+		writeError(w, "targetCurrencyCode is required", http.StatusBadRequest)
+		return
+	}
+
+	if rateStr == "" {
+		writeError(w, "rate is required", http.StatusBadRequest)
 		return
 	}
 
