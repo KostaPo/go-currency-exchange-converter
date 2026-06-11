@@ -86,8 +86,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
 	defer cancel()
 
-	baseCode := strings.ToUpper(r.FormValue("baseCurrencyCode"))
-	targetCode := strings.ToUpper(r.FormValue("targetCurrencyCode"))
+	baseCode := strings.ToUpper(strings.TrimSpace(r.FormValue("baseCurrencyCode")))
+	targetCode := strings.ToUpper(strings.TrimSpace(r.FormValue("targetCurrencyCode")))
 	rateStr := r.FormValue("rate")
 
 	if baseCode == "" || targetCode == "" || rateStr == "" {
