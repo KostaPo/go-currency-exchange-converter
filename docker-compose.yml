@@ -10,6 +10,12 @@ services:
       - sqlite_data:/app/data
     command: ["./server", "-config", "configs/config.docker.yml"]
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   sqlite_data:
