@@ -122,6 +122,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(c)
 }
 
+func (h *Handler) handleEmptyCode(w http.ResponseWriter, r *http.Request) {
+	writeError(w, "currency code is required", http.StatusBadRequest)
+}
+
 func writeError(w http.ResponseWriter, message string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

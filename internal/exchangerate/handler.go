@@ -185,6 +185,10 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(er)
 }
 
+func (h *Handler) handleEmptyPair(w http.ResponseWriter, r *http.Request) {
+	writeError(w, "currency pair is required", http.StatusBadRequest)
+}
+
 func writeError(w http.ResponseWriter, message string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
