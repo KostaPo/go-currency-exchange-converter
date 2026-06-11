@@ -1,6 +1,6 @@
 package exchange
 
-import "currency-exchange-converter/internal/currency"
+import "currency-exchange-converter/internal/model/currency"
 
 type Exchange struct {
 	BaseCurrency    currency.Currency `json:"baseCurrency"`

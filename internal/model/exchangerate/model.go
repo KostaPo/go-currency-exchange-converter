@@ -1,6 +1,6 @@
 package exchangerate
 
-import "currency-exchange-converter/internal/currency"
+import "currency-exchange-converter/internal/model/currency"
 
 type ExchangeRate struct {
 	ID             int               `json:"id"`

@@ -2,8 +2,8 @@ package exchange
 
 import (
 	"context"
-	"currency-exchange-converter/internal/exchangerate"
 	"currency-exchange-converter/internal/middleware"
+	"currency-exchange-converter/internal/model/exchangerate"
 	"errors"
 	"log/slog"
 )

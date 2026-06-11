@@ -3,11 +3,11 @@ package api
 import (
 	"net/http"
 
-	"currency-exchange-converter/internal/currency"
-	"currency-exchange-converter/internal/exchange"
-	"currency-exchange-converter/internal/exchangerate"
-	"currency-exchange-converter/internal/health"
 	"currency-exchange-converter/internal/middleware"
+	"currency-exchange-converter/internal/model/currency"
+	"currency-exchange-converter/internal/model/exchange"
+	"currency-exchange-converter/internal/model/exchangerate"
+	"currency-exchange-converter/internal/observability/health"
 )
 
 func NewRouter(
